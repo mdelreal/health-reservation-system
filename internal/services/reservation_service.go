@@ -3,27 +3,27 @@ package services
 import (
 	"context"
 
-	"github.com/manueldelreal/health-reservation-system/api"
+	pb "github.com/manueldelreal/health-reservation-system/api"
 )
 
 type ReservationService struct{}
 
-func (s *ReservationService) SetAvailability(ctx context.Context, req *api.SetAvailabilityRequest) (*api.SetAvailabilityResponse, error) {
+func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAvailabilityRequest) (*pb.SetAvailabilityResponse, error) {
 	// Store the provider's availability in the database (to be implemented)
-	return &api.SetAvailabilityResponse{Message: "Availability set successfully"}, nil
+	return &pb.SetAvailabilityResponse{Message: "Availability set successfully"}, nil
 }
 
-func (s *ReservationService) GetAvailableSlots(ctx context.Context, req *api.GetAvailableSlotsRequest) (*api.GetAvailableSlotsResponse, error) {
+func (s *ReservationService) GetAvailableSlots(ctx context.Context, req *pb.GetAvailableSlotsRequest) (*pb.GetAvailableSlotsResponse, error) {
 	// Retrieve available slots from the database (to be implemented)
-	return &api.GetAvailableSlotsResponse{}, nil
+	return &pb.GetAvailableSlotsResponse{}, nil
 }
 
-func (s *ReservationService) ReserveSlot(ctx context.Context, req *api.ReserveSlotRequest) (*api.ReserveSlotResponse, error) {
+func (s *ReservationService) ReserveSlot(ctx context.Context, req *pb.ReserveSlotRequest) (*pb.ReserveSlotResponse, error) {
 	// Reserve the slot if it's available (to be implemented)
-	return &api.ReserveSlotResponse{}, nil
+	return &pb.ReserveSlotResponse{}, nil
 }
 
-func (s *ReservationService) ConfirmReservation(ctx context.Context, req *api.ConfirmReservationRequest) (*api.ConfirmReservationResponse, error) {
+func (s *ReservationService) ConfirmReservation(ctx context.Context, req *pb.ConfirmReservationRequest) (*pb.ConfirmReservationResponse, error) {
 	// Confirm the reservation if it exists and hasn't expired (to be implemented)
-	return &api.ConfirmReservationResponse{Message: "Reservation confirmed"}, nil
+	return &pb.ConfirmReservationResponse{Message: "Reservation confirmed"}, nil
 }

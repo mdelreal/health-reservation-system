@@ -4,13 +4,14 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/manueldelreal/health-reservation-system/api"
 	"github.com/manueldelreal/health-reservation-system/internal/services"
+
+	pb "github.com/manueldelreal/health-reservation-system/api"
 )
 
 func main() {
 	server := &services.ReservationService{}
-	twirpHandler := api.NewReservationServiceServer(server)
+	twirpHandler := pb.NewReservationServiceServer(server)
 
 	mux := http.NewServeMux()
 	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
