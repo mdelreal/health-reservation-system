@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package reservation;
+option go_package = "github.com/manueldelreal/health-reservation-system/api;reservation";
+
+// The Reservation service
+service ReservationService {
+  // Provider sets their availability
+  rpc SetAvailability(SetAvailabilityRequest) returns (SetAvailabilityResponse);
+
+  // Retrieve available slots
+  rpc GetAvailableSlots(GetAvailableSlotsRequest) returns (GetAvailableSlotsResponse);
+
+  // Reserve a slot
+  rpc ReserveSlot(ReserveSlotRequest) returns (ReserveSlotResponse);
+
+  // Confirm a reservation
+  rpc ConfirmReservation(ConfirmReservationRequest) returns (ConfirmReservationResponse);
+}
+
+message SetAvailabilityRequest {
+  string provider_id = 1;
+  repeated TimeSlot time_slots = 2;
+}
+
+message SetAvailabilityResponse {
+  string message = 1;
+}
+
+message GetAvailableSlotsRequest {
+  string provider_id = 1;
+  string date = 2; // YYYY-MM-DD
+}
+
+message GetAvailableSlotsResponse {
+  repeated TimeSlot slots = 1;
+}
+
+message ReserveSlotRequest {
+  string slot_id = 1;
+  string client_id = 2;
+}
+
+message ReserveSlotResponse {
+  string reservation_id = 1;
+  string message = 2;
+}
+
+message ConfirmReservationRequest {
+  string reservation_id = 1;
+}
+
+message ConfirmReservationResponse {
+  string message = 1;
+}
+
+message TimeSlot {
+  string id = 1;
+  string start_time = 2; // ISO 8601 format
+  string end_time = 3;   // ISO 8601 format
+  string status = 4;     // Available, Reserved, Confirmed
+}
