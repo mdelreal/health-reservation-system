@@ -15,6 +15,11 @@ type Availability struct {
 	Provider   Provider `gorm:"foreignKey:ProviderID"`
 }
 
+// Specify the singular table name for Availability
+func (Availability) TableName() string {
+	return "availability"
+}
+
 type Slot struct {
 	ID                string `gorm:"primaryKey"`
 	AvailabilityID    string `gorm:"index"`

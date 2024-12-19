@@ -3,22 +3,31 @@ package storage
 import (
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/manueldelreal/health-reservation-system/internal/models"
 )
 
-func AddAvailability(providerID string, slots []models.Availability) error {
-	for _, slot := range slots {
-		slot.ProviderID = providerID
-		err := DB.Create(&slot).Error
-		if err != nil {
+// AddAvailabilityAndSlots saves availability and corresponding slots to the database in a single transaction.
+func AddAvailabilityAndSlots(providerID string, availabilities []models.Availability, slots []models.Slot) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// Save availabilities
+		if err := tx.Create(&availabilities).Error; err != nil {
 			return err
 		}
-	}
-	return nil
+
+		// Save slots
+		if err := tx.Create(&slots).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func GetAvailableSlots(providerID string, date time.Time) ([]models.Slot, error) {
 	var slots []models.Slot
+
 	start := date
 	end := date.Add(24 * time.Hour)
 

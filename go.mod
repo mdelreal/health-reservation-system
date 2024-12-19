@@ -3,6 +3,7 @@ module github.com/manueldelreal/health-reservation-system
 go 1.21
 
 require (
+	github.com/oklog/ulid/v2 v2.1.0
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	google.golang.org/protobuf v1.36.0
 	gorm.io/driver/sqlite v1.5.7
