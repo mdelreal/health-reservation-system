@@ -48,7 +48,7 @@ make run
 
 The server will start on `http://localhost:8080`.
 
-### Testing
+### Testing (not finished :( )
 Run all tests:
 ```bash
 make test
