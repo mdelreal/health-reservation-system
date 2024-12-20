@@ -26,7 +26,6 @@ type Slot struct {
 	StartTime      time.Time
 	EndTime        time.Time
 	Status         string
-	ReservationID  string
 	Availability   Availability `gorm:"foreignKey:AvailabilityID"`
 	ProviderID     string       `gorm:"index"`
 }
@@ -34,7 +33,10 @@ type Slot struct {
 type Reservation struct {
 	ID                string `gorm:"primaryKey"`
 	SlotID            string `gorm:"index"`
-	ClientID          string `gorm:"index"` // Add an index for efficient querying
+	ClientID          string `gorm:"index"`
+	AvailabilityID    string `gorm:"index"`
+	StartTime         time.Time
+	EndTime           time.Time
 	ProviderID        string `gorm:"index"`
 	Status            string // Pending, Confirmed
 	ReservationExpiry *time.Time

@@ -229,8 +229,8 @@ func (s *ReservationService) GetReservedSlotsByProvider(ctx context.Context, req
 			ClientId:      reservation.ClientID,
 			ProviderId:    req.ProviderId,
 			Status:        reservation.Status,
-			StartTime:     reservation.Slot.StartTime.Format(time.RFC3339),
-			EndTime:       reservation.Slot.EndTime.Format(time.RFC3339),
+			StartTime:     reservation.StartTime.Format(time.RFC3339),
+			EndTime:       reservation.EndTime.Format(time.RFC3339),
 		})
 	}
 
@@ -262,8 +262,8 @@ func (s *ReservationService) GetReservedSlotsByClient(ctx context.Context, req *
 			ClientId:      req.ClientId,
 			ProviderId:    reservation.ProviderID,
 			Status:        reservation.Status,
-			StartTime:     reservation.Slot.StartTime.Format(time.RFC3339),
-			EndTime:       reservation.Slot.EndTime.Format(time.RFC3339),
+			StartTime:     reservation.StartTime.Format(time.RFC3339),
+			EndTime:       reservation.EndTime.Format(time.RFC3339),
 		})
 	}
 

@@ -61,11 +61,14 @@ func ReserveSlot(slotID, clientID, providerID string, expiration time.Time) erro
 
 		// Create a reservation using the same slot ID
 		reservation := models.Reservation{
-			ID:         slot.ID, // Use the slot ID as the reservation ID
-			SlotID:     slot.ID,
-			ClientID:   clientID,
-			ProviderID: slot.ProviderID,
-			Status:     "Reserved",
+			ID:                slot.ID, // Use the slot ID as the reservation ID
+			ClientID:          clientID,
+			ProviderID:        slot.ProviderID,
+			AvailabilityID:    slot.AvailabilityID,
+			ReservationExpiry: &expiration,
+			StartTime:         slot.StartTime,
+			EndTime:           slot.EndTime,
+			Status:            "Reserved",
 		}
 		if err := tx.Create(&reservation).Error; err != nil {
 			return err
@@ -114,17 +117,17 @@ func CleanupExpiredReservations() error {
 
 		// Iterate over expired reservations
 		for _, reservation := range expiredReservations {
-			// Retrieve the original slot details from the reservation
-			var originalSlot models.Slot
-			if err := tx.First(&originalSlot, "id = ?", reservation.SlotID).Error; err != nil {
-				return err
+			// Recreate the slot with "Available" status in the slots table
+			newSlot := models.Slot{
+				ID:             reservation.ID, // Use the same ID
+				AvailabilityID: reservation.AvailabilityID,
+				ProviderID:     reservation.ProviderID,
+				StartTime:      reservation.StartTime,
+				EndTime:        reservation.EndTime,
+				Status:         "Available",
 			}
 
-			// Recreate the slot with "Available" status using the same ID
-			originalSlot.Status = "Available"
-			originalSlot.ReservationID = ""
-
-			if err := tx.Create(&originalSlot).Error; err != nil {
+			if err := tx.Create(&newSlot).Error; err != nil {
 				return err
 			}
 
