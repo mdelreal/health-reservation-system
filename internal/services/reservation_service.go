@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"gorm.io/gorm"
 
 	pb "github.com/manueldelreal/health-reservation-system/api"
 	"github.com/manueldelreal/health-reservation-system/internal/models"
@@ -25,7 +26,7 @@ func generateID() string {
 func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAvailabilityRequest) (*pb.SetAvailabilityResponse, error) {
 	// Validate that the provider exists
 	var provider models.Provider
-	err := storage.DB.First(&provider, "id = ?", req.ProviderId).Error
+	err := storage.DB.First(&provider, "id = ?", req.ProviderId)
 	if err != nil {
 		return nil, errors.New("provider not found")
 	}
@@ -46,7 +47,7 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 
 		// Check if availability already exists for this timeframe
 		var existingAvailability models.Availability
-		err = storage.DB.First(&existingAvailability, "provider_id = ? AND start_time = ? AND end_time = ?", req.ProviderId, startTime, endTime).Error
+		err = storage.DB.First(&existingAvailability, "provider_id = ? AND start_time = ? AND end_time = ?", req.ProviderId, startTime, endTime)
 		if err == nil {
 			// Skip this time slot if availability already exists
 			continue
@@ -65,7 +66,7 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 		for t := startTime; t.Before(endTime); t = t.Add(15 * time.Minute) {
 			// Check if slot already exists for this timeframe
 			var existingSlot models.Slot
-			err = storage.DB.First(&existingSlot, "availability_id = ? AND start_time = ? AND end_time = ?", availability.ID, t, t.Add(15*time.Minute)).Error
+			err = storage.DB.First(&existingSlot, "availability_id = ? AND start_time = ? AND end_time = ?", availability.ID, t, t.Add(15*time.Minute))
 			if err == nil {
 				// Skip this slot if it already exists
 				continue
@@ -127,7 +128,7 @@ func (s *ReservationService) GetAvailableSlots(ctx context.Context, req *pb.GetA
 func (s *ReservationService) ReserveSlot(ctx context.Context, req *pb.ReserveSlotRequest) (*pb.ReserveSlotResponse, error) {
 	// Fetch the slot to validate
 	var slot models.Slot
-	err := storage.DB.First(&slot, "id = ? AND status = ?", req.SlotId, "Available").Error
+	err := storage.DB.First(&slot, "id = ? AND status = ?", req.SlotId, "Available")
 	if err != nil {
 		return nil, errors.New("slot is not available")
 	}
@@ -139,7 +140,7 @@ func (s *ReservationService) ReserveSlot(ctx context.Context, req *pb.ReserveSlo
 
 	// Reserve the slot
 	expiration := time.Now().Add(30 * time.Minute)
-	err = storage.ReserveSlot(req.SlotId, req.ClientId, expiration)
+	err = storage.ReserveSlot(req.SlotId, req.ClientId, slot.ProviderID, expiration)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +164,13 @@ func (s *ReservationService) ConfirmReservation(ctx context.Context, req *pb.Con
 func (s *ReservationService) CreateProvider(ctx context.Context, req *pb.CreateProviderRequest) (*pb.CreateProviderResponse, error) {
 	// Check if the provider already exists
 	var existingProvider models.Provider
-	err := storage.DB.First(&existingProvider, "id = ?", req.Id).Error
+	err := storage.DB.First(&existingProvider, "id = ?", req.Id)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Return error if it is not a "record not found" error
+		return nil, errors.New("failed to query provider")
+	}
 	if err == nil {
+		// If no error, the provider already exists
 		return nil, errors.New("provider already exists")
 	}
 
@@ -174,7 +180,7 @@ func (s *ReservationService) CreateProvider(ctx context.Context, req *pb.CreateP
 		Name: req.Name,
 	}
 
-	err = storage.DB.Create(&provider).Error
+	err = storage.DB.Create(&provider)
 	if err != nil {
 		return nil, errors.New("failed to create provider")
 	}
@@ -187,7 +193,7 @@ func (s *ReservationService) CreateProvider(ctx context.Context, req *pb.CreateP
 func (s *ReservationService) GetProvider(ctx context.Context, req *pb.GetProviderRequest) (*pb.GetProviderResponse, error) {
 	// Retrieve the provider data
 	var provider models.Provider
-	err := storage.DB.First(&provider, "id = ?", req.Id).Error
+	err := storage.DB.First(&provider, "id = ?", req.Id)
 	if err != nil {
 		return nil, errors.New("provider not found")
 	}
@@ -196,4 +202,70 @@ func (s *ReservationService) GetProvider(ctx context.Context, req *pb.GetProvide
 		Id:   provider.ID,
 		Name: provider.Name,
 	}, nil
+}
+
+func (s *ReservationService) GetReservedSlotsByProvider(ctx context.Context, req *pb.GetReservedSlotsByProviderRequest) (*pb.GetReservedSlotsByProviderResponse, error) {
+	// Parse the optional date argument
+	var date *time.Time
+	if req.Date != "" {
+		parsedDate, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			return nil, errors.New("invalid date format")
+		}
+		date = &parsedDate
+	}
+
+	// Query for reservations
+	reservations, err := storage.GetReservationsByProvider(req.ProviderId, date)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf response
+	var pbReservations []*pb.ReservationDetails
+	for _, reservation := range reservations {
+		pbReservations = append(pbReservations, &pb.ReservationDetails{
+			ReservationId: reservation.ID,
+			ClientId:      reservation.ClientID,
+			ProviderId:    req.ProviderId,
+			Status:        reservation.Status,
+			StartTime:     reservation.Slot.StartTime.Format(time.RFC3339),
+			EndTime:       reservation.Slot.EndTime.Format(time.RFC3339),
+		})
+	}
+
+	return &pb.GetReservedSlotsByProviderResponse{Reservations: pbReservations}, nil
+}
+
+func (s *ReservationService) GetReservedSlotsByClient(ctx context.Context, req *pb.GetReservedSlotsByClientRequest) (*pb.GetReservedSlotsByClientResponse, error) {
+	// Parse the optional date argument
+	var date *time.Time
+	if req.Date != "" {
+		parsedDate, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			return nil, errors.New("invalid date format")
+		}
+		date = &parsedDate
+	}
+
+	// Query for reservations
+	reservations, err := storage.GetReservationsByClient(req.ClientId, date)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to protobuf response
+	var pbReservations []*pb.ReservationDetails
+	for _, reservation := range reservations {
+		pbReservations = append(pbReservations, &pb.ReservationDetails{
+			ReservationId: reservation.ID,
+			ClientId:      req.ClientId,
+			ProviderId:    reservation.ProviderID,
+			Status:        reservation.Status,
+			StartTime:     reservation.Slot.StartTime.Format(time.RFC3339),
+			EndTime:       reservation.Slot.EndTime.Format(time.RFC3339),
+		})
+	}
+
+	return &pb.GetReservedSlotsByClientResponse{Reservations: pbReservations}, nil
 }

@@ -21,20 +21,22 @@ func (Availability) TableName() string {
 }
 
 type Slot struct {
-	ID                string `gorm:"primaryKey"`
-	AvailabilityID    string `gorm:"index"`
-	StartTime         time.Time
-	EndTime           time.Time
-	Status            string // Available, Reserved, Confirmed
-	ReservationID     string `gorm:"index"`
-	ReservationExpiry *time.Time
-	Availability      Availability `gorm:"foreignKey:AvailabilityID"`
+	ID             string `gorm:"primaryKey"`
+	AvailabilityID string `gorm:"index"`
+	StartTime      time.Time
+	EndTime        time.Time
+	Status         string
+	ReservationID  string
+	Availability   Availability `gorm:"foreignKey:AvailabilityID"`
+	ProviderID     string       `gorm:"index"`
 }
 
 type Reservation struct {
-	ID       string `gorm:"primaryKey"`
-	SlotID   string `gorm:"index"`
-	ClientID string
-	Status   string // Pending, Confirmed
-	Slot     Slot   `gorm:"foreignKey:SlotID"`
+	ID                string `gorm:"primaryKey"`
+	SlotID            string `gorm:"index"`
+	ClientID          string `gorm:"index"` // Add an index for efficient querying
+	ProviderID        string `gorm:"index"`
+	Status            string // Pending, Confirmed
+	ReservationExpiry *time.Time
+	Slot              Slot `gorm:"foreignKey:SlotID"`
 }

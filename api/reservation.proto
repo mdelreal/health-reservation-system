@@ -22,6 +22,12 @@ service ReservationService {
 
   // Retrieve provider data
   rpc GetProvider(GetProviderRequest) returns (GetProviderResponse);
+  
+  // Retrieve reservations by Provider
+  rpc GetReservedSlotsByProvider(GetReservedSlotsByProviderRequest) returns (GetReservedSlotsByProviderResponse);
+
+  // Retrieve reservations by Client
+  rpc GetReservedSlotsByClient(GetReservedSlotsByClientRequest) returns (GetReservedSlotsByClientResponse);
 }
 
 message CreateProviderRequest {
@@ -83,4 +89,31 @@ message TimeSlot {
   string start_time = 2; // ISO 8601 format
   string end_time = 3;   // ISO 8601 format
   string status = 4;     // Available, Reserved, Confirmed
+}
+
+message GetReservedSlotsByProviderRequest {
+  string provider_id = 1;
+  string date = 2; // Optional, format: "YYYY-MM-DD"
+}
+
+message GetReservedSlotsByProviderResponse {
+  repeated ReservationDetails reservations = 1;
+}
+
+message GetReservedSlotsByClientRequest {
+  string client_id = 1;
+  string date = 2; // Optional, format: "YYYY-MM-DD"
+}
+
+message GetReservedSlotsByClientResponse {
+  repeated ReservationDetails reservations = 1;
+}
+
+message ReservationDetails {
+  string reservation_id = 1;
+  string client_id = 2;
+  string provider_id = 3;
+  string status = 4; // Pending, Confirmed
+  string start_time = 5;
+  string end_time = 6;
 }

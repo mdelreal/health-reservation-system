@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"errors"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,14 +12,20 @@ import (
 
 // AddAvailabilityAndSlots saves availability and corresponding slots to the database in a single transaction.
 func AddAvailabilityAndSlots(providerID string, availabilities []models.Availability, slots []models.Slot) error {
+	for i := range slots {
+		slots[i].ProviderID = providerID
+	}
+
 	return DB.Transaction(func(tx *gorm.DB) error {
+		txHandler := &GormDBHandler{DB: tx}
+
 		// Save availabilities
-		if err := tx.Create(&availabilities).Error; err != nil {
+		if err := txHandler.Create(&availabilities); err != nil {
 			return err
 		}
 
 		// Save slots
-		if err := tx.Create(&slots).Error; err != nil {
+		if err := txHandler.Create(&slots); err != nil {
 			return err
 		}
 
@@ -31,30 +39,132 @@ func GetAvailableSlots(providerID string, date time.Time) ([]models.Slot, error)
 	start := date
 	end := date.Add(24 * time.Hour)
 
-	err := DB.Where("availability_id IN (?) AND status = ?",
-		DB.Model(&models.Availability{}).Select("id").Where("provider_id = ? AND start_time BETWEEN ? AND ?", providerID, start, end),
+	// Use the First method for the subquery and Find for the main query
+	err := DB.(*GormDBHandler).GetDB().Where(
+		"availability_id IN (?) AND status = ?",
+		DB.(*GormDBHandler).GetDB().Model(&models.Availability{}).Select("id").Where(
+			"provider_id = ? AND start_time BETWEEN ? AND ?", providerID, start, end,
+		),
 		"Available",
 	).Find(&slots).Error
 
 	return slots, err
 }
 
-func ReserveSlot(slotID, clientID string, expiration time.Time) error {
-	return DB.Model(&models.Slot{}).Where("id = ? AND status = ?", slotID, "Available").
-		Updates(models.Slot{
-			Status:            "Reserved",
-			ReservationExpiry: &expiration,
-		}).Error
+func ReserveSlot(slotID, clientID, providerID string, expiration time.Time) error {
+	return DB.(*GormDBHandler).GetDB().Transaction(func(tx *gorm.DB) error {
+		// Fetch the slot to validate availability
+		var slot models.Slot
+		if err := tx.First(&slot, "id = ? AND status = ?", slotID, "Available").Error; err != nil {
+			return err
+		}
+
+		// Create a reservation using the same slot ID
+		reservation := models.Reservation{
+			ID:         slot.ID, // Use the slot ID as the reservation ID
+			SlotID:     slot.ID,
+			ClientID:   clientID,
+			ProviderID: slot.ProviderID,
+			Status:     "Reserved",
+		}
+		if err := tx.Create(&reservation).Error; err != nil {
+			return err
+		}
+
+		// Remove the slot from the slots table
+		if err := tx.Delete(&slot).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
-func ConfirmReservation(slotID string) error {
-	return DB.Model(&models.Slot{}).Where("id = ?", slotID).Updates(models.Slot{
-		Status: "Confirmed",
-	}).Error
+func ConfirmReservation(reservationID string) error {
+	// Fetch the reservation
+	var reservation models.Reservation
+	result := DB.(*GormDBHandler).GetDB().First(&reservation, "id = ?", reservationID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return errors.New("reservation not found")
+		}
+		return result.Error
+	}
+
+	// Check if the reservation is already confirmed
+	if reservation.Status == "Confirmed" {
+		return errors.New("reservation is already confirmed")
+	}
+
+	// Update the reservation status to Confirmed
+	return DB.(*GormDBHandler).GetDB().Model(&models.Reservation{}).Where("id = ?", reservationID).
+		Update("status", "Confirmed").Error
 }
 
 func CleanupExpiredReservations() error {
 	now := time.Now()
-	return DB.Model(&models.Slot{}).Where("status = ? AND reservation_expiry < ?", "Reserved", now).
-		Update("status", "Available").Error
+	log.Println("Checking for expired reservations...")
+
+	return DB.(*GormDBHandler).GetDB().Transaction(func(tx *gorm.DB) error {
+		// Fetch expired reservations
+		var expiredReservations []models.Reservation
+		if err := tx.Where("status = ? AND reservation_expiry < ?", "Reserved", now).Find(&expiredReservations).Error; err != nil {
+			return err
+		}
+
+		// Iterate over expired reservations
+		for _, reservation := range expiredReservations {
+			// Retrieve the original slot details from the reservation
+			var originalSlot models.Slot
+			if err := tx.First(&originalSlot, "id = ?", reservation.SlotID).Error; err != nil {
+				return err
+			}
+
+			// Recreate the slot with "Available" status using the same ID
+			originalSlot.Status = "Available"
+			originalSlot.ReservationID = ""
+
+			if err := tx.Create(&originalSlot).Error; err != nil {
+				return err
+			}
+
+			// Delete the reservation
+			if err := tx.Delete(&models.Reservation{}, "id = ?", reservation.ID).Error; err != nil {
+				return err
+			}
+		}
+
+		log.Printf("Expired reservations cleaned up: %d records processed", len(expiredReservations))
+		return nil
+	})
+}
+
+func GetReservationsByProvider(providerID string, date *time.Time) ([]models.Reservation, error) {
+	var reservations []models.Reservation
+	query := DB.(*GormDBHandler).GetDB().Where("provider_id = ?", providerID)
+
+	if date != nil {
+		start := date.Truncate(24 * time.Hour)
+		end := start.Add(24 * time.Hour)
+		query = query.Where("slot_id IN (?)", DB.(*GormDBHandler).GetDB().
+			Model(&models.Slot{}).Select("id").Where("start_time BETWEEN ? AND ?", start, end))
+	}
+
+	err := query.Preload("Slot").Find(&reservations).Error
+	return reservations, err
+}
+
+func GetReservationsByClient(clientID string, date *time.Time) ([]models.Reservation, error) {
+	var reservations []models.Reservation
+	query := DB.(*GormDBHandler).GetDB().Where("client_id = ?", clientID)
+
+	if date != nil {
+		start := date.Truncate(24 * time.Hour)
+		end := start.Add(24 * time.Hour)
+		query = query.Where("slot_id IN (?)", DB.(*GormDBHandler).GetDB().
+			Model(&models.Slot{}).Select("id").Where("start_time BETWEEN ? AND ?", start, end))
+	}
+
+	err := query.Preload("Slot").Find(&reservations).Error
+	return reservations, err
 }

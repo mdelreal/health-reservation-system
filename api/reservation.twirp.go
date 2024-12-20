@@ -50,6 +50,12 @@ type ReservationService interface {
 
 	// Retrieve provider data
 	GetProvider(context.Context, *GetProviderRequest) (*GetProviderResponse, error)
+
+	// Retrieve reservations by Provider
+	GetReservedSlotsByProvider(context.Context, *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error)
+
+	// Retrieve reservations by Client
+	GetReservedSlotsByClient(context.Context, *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error)
 }
 
 // ==================================
@@ -58,7 +64,7 @@ type ReservationService interface {
 
 type reservationServiceProtobufClient struct {
 	client      HTTPClient
-	urls        [6]string
+	urls        [8]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -86,13 +92,15 @@ func NewReservationServiceProtobufClient(baseURL string, client HTTPClient, opts
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "reservation", "ReservationService")
-	urls := [6]string{
+	urls := [8]string{
 		serviceURL + "SetAvailability",
 		serviceURL + "GetAvailableSlots",
 		serviceURL + "ReserveSlot",
 		serviceURL + "ConfirmReservation",
 		serviceURL + "CreateProvider",
 		serviceURL + "GetProvider",
+		serviceURL + "GetReservedSlotsByProvider",
+		serviceURL + "GetReservedSlotsByClient",
 	}
 
 	return &reservationServiceProtobufClient{
@@ -379,13 +387,105 @@ func (c *reservationServiceProtobufClient) callGetProvider(ctx context.Context, 
 	return out, nil
 }
 
+func (c *reservationServiceProtobufClient) GetReservedSlotsByProvider(ctx context.Context, in *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "reservation")
+	ctx = ctxsetters.WithServiceName(ctx, "ReservationService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByProvider")
+	caller := c.callGetReservedSlotsByProvider
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByProviderRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByProviderRequest) when calling interceptor")
+					}
+					return c.callGetReservedSlotsByProvider(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByProviderResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByProviderResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *reservationServiceProtobufClient) callGetReservedSlotsByProvider(ctx context.Context, in *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+	out := new(GetReservedSlotsByProviderResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *reservationServiceProtobufClient) GetReservedSlotsByClient(ctx context.Context, in *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "reservation")
+	ctx = ctxsetters.WithServiceName(ctx, "ReservationService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByClient")
+	caller := c.callGetReservedSlotsByClient
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByClientRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByClientRequest) when calling interceptor")
+					}
+					return c.callGetReservedSlotsByClient(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByClientResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByClientResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *reservationServiceProtobufClient) callGetReservedSlotsByClient(ctx context.Context, in *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+	out := new(GetReservedSlotsByClientResponse)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[7], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
 // ==============================
 // ReservationService JSON Client
 // ==============================
 
 type reservationServiceJSONClient struct {
 	client      HTTPClient
-	urls        [6]string
+	urls        [8]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -413,13 +513,15 @@ func NewReservationServiceJSONClient(baseURL string, client HTTPClient, opts ...
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "reservation", "ReservationService")
-	urls := [6]string{
+	urls := [8]string{
 		serviceURL + "SetAvailability",
 		serviceURL + "GetAvailableSlots",
 		serviceURL + "ReserveSlot",
 		serviceURL + "ConfirmReservation",
 		serviceURL + "CreateProvider",
 		serviceURL + "GetProvider",
+		serviceURL + "GetReservedSlotsByProvider",
+		serviceURL + "GetReservedSlotsByClient",
 	}
 
 	return &reservationServiceJSONClient{
@@ -706,6 +808,98 @@ func (c *reservationServiceJSONClient) callGetProvider(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *reservationServiceJSONClient) GetReservedSlotsByProvider(ctx context.Context, in *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "reservation")
+	ctx = ctxsetters.WithServiceName(ctx, "ReservationService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByProvider")
+	caller := c.callGetReservedSlotsByProvider
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByProviderRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByProviderRequest) when calling interceptor")
+					}
+					return c.callGetReservedSlotsByProvider(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByProviderResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByProviderResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *reservationServiceJSONClient) callGetReservedSlotsByProvider(ctx context.Context, in *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+	out := new(GetReservedSlotsByProviderResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *reservationServiceJSONClient) GetReservedSlotsByClient(ctx context.Context, in *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "reservation")
+	ctx = ctxsetters.WithServiceName(ctx, "ReservationService")
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByClient")
+	caller := c.callGetReservedSlotsByClient
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByClientRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByClientRequest) when calling interceptor")
+					}
+					return c.callGetReservedSlotsByClient(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByClientResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByClientResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *reservationServiceJSONClient) callGetReservedSlotsByClient(ctx context.Context, in *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+	out := new(GetReservedSlotsByClientResponse)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[7], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
 // =================================
 // ReservationService Server Handler
 // =================================
@@ -820,6 +1014,12 @@ func (s *reservationServiceServer) ServeHTTP(resp http.ResponseWriter, req *http
 		return
 	case "GetProvider":
 		s.serveGetProvider(ctx, resp, req)
+		return
+	case "GetReservedSlotsByProvider":
+		s.serveGetReservedSlotsByProvider(ctx, resp, req)
+		return
+	case "GetReservedSlotsByClient":
+		s.serveGetReservedSlotsByClient(ctx, resp, req)
 		return
 	default:
 		msg := fmt.Sprintf("no handler for path %q", req.URL.Path)
@@ -1908,6 +2108,366 @@ func (s *reservationServiceServer) serveGetProviderProtobuf(ctx context.Context,
 	callResponseSent(ctx, s.hooks)
 }
 
+func (s *reservationServiceServer) serveGetReservedSlotsByProvider(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveGetReservedSlotsByProviderJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveGetReservedSlotsByProviderProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *reservationServiceServer) serveGetReservedSlotsByProviderJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByProvider")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(GetReservedSlotsByProviderRequest)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.ReservationService.GetReservedSlotsByProvider
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByProviderRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByProviderRequest) when calling interceptor")
+					}
+					return s.ReservationService.GetReservedSlotsByProvider(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByProviderResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByProviderResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *GetReservedSlotsByProviderResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *GetReservedSlotsByProviderResponse and nil error while calling GetReservedSlotsByProvider. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *reservationServiceServer) serveGetReservedSlotsByProviderProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByProvider")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(GetReservedSlotsByProviderRequest)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.ReservationService.GetReservedSlotsByProvider
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *GetReservedSlotsByProviderRequest) (*GetReservedSlotsByProviderResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByProviderRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByProviderRequest) when calling interceptor")
+					}
+					return s.ReservationService.GetReservedSlotsByProvider(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByProviderResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByProviderResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *GetReservedSlotsByProviderResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *GetReservedSlotsByProviderResponse and nil error while calling GetReservedSlotsByProvider. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *reservationServiceServer) serveGetReservedSlotsByClient(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	header := req.Header.Get("Content-Type")
+	i := strings.Index(header, ";")
+	if i == -1 {
+		i = len(header)
+	}
+	switch strings.TrimSpace(strings.ToLower(header[:i])) {
+	case "application/json":
+		s.serveGetReservedSlotsByClientJSON(ctx, resp, req)
+	case "application/protobuf":
+		s.serveGetReservedSlotsByClientProtobuf(ctx, resp, req)
+	default:
+		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
+		twerr := badRouteError(msg, req.Method, req.URL.Path)
+		s.writeError(ctx, resp, twerr)
+	}
+}
+
+func (s *reservationServiceServer) serveGetReservedSlotsByClientJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByClient")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	d := json.NewDecoder(req.Body)
+	rawReqBody := json.RawMessage{}
+	if err := d.Decode(&rawReqBody); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+	reqContent := new(GetReservedSlotsByClientRequest)
+	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
+		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
+		return
+	}
+
+	handler := s.ReservationService.GetReservedSlotsByClient
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByClientRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByClientRequest) when calling interceptor")
+					}
+					return s.ReservationService.GetReservedSlotsByClient(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByClientResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByClientResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *GetReservedSlotsByClientResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *GetReservedSlotsByClientResponse and nil error while calling GetReservedSlotsByClient. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
+	respBytes, err := marshaler.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/json")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
+func (s *reservationServiceServer) serveGetReservedSlotsByClientProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+	var err error
+	ctx = ctxsetters.WithMethodName(ctx, "GetReservedSlotsByClient")
+	ctx, err = callRequestRouted(ctx, s.hooks)
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+
+	buf, err := io.ReadAll(req.Body)
+	if err != nil {
+		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
+		return
+	}
+	reqContent := new(GetReservedSlotsByClientRequest)
+	if err = proto.Unmarshal(buf, reqContent); err != nil {
+		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
+		return
+	}
+
+	handler := s.ReservationService.GetReservedSlotsByClient
+	if s.interceptor != nil {
+		handler = func(ctx context.Context, req *GetReservedSlotsByClientRequest) (*GetReservedSlotsByClientResponse, error) {
+			resp, err := s.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*GetReservedSlotsByClientRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*GetReservedSlotsByClientRequest) when calling interceptor")
+					}
+					return s.ReservationService.GetReservedSlotsByClient(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*GetReservedSlotsByClientResponse)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*GetReservedSlotsByClientResponse) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+
+	// Call service method
+	var respContent *GetReservedSlotsByClientResponse
+	func() {
+		defer ensurePanicResponses(ctx, resp, s.hooks)
+		respContent, err = handler(ctx, reqContent)
+	}()
+
+	if err != nil {
+		s.writeError(ctx, resp, err)
+		return
+	}
+	if respContent == nil {
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *GetReservedSlotsByClientResponse and nil error while calling GetReservedSlotsByClient. nil responses are not supported"))
+		return
+	}
+
+	ctx = callResponsePrepared(ctx, s.hooks)
+
+	respBytes, err := proto.Marshal(respContent)
+	if err != nil {
+		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
+		return
+	}
+
+	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
+	resp.Header().Set("Content-Type", "application/protobuf")
+	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
+	resp.WriteHeader(http.StatusOK)
+	if n, err := resp.Write(respBytes); err != nil {
+		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
+		twerr := twirp.NewError(twirp.Unknown, msg)
+		ctx = callError(ctx, s.hooks, twerr)
+	}
+	callResponseSent(ctx, s.hooks)
+}
+
 func (s *reservationServiceServer) ServiceDescriptor() ([]byte, int) {
 	return twirpFileDescriptor0, 0
 }
@@ -2489,40 +3049,49 @@ func callClientError(ctx context.Context, h *twirp.ClientHooks, err twirp.Error)
 }
 
 var twirpFileDescriptor0 = []byte{
-	// 560 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x6d, 0x6b, 0x1a, 0x41,
-	0x10, 0x46, 0x63, 0x8d, 0x8e, 0xd4, 0xd2, 0x0d, 0x9a, 0xf3, 0x4a, 0x89, 0x5c, 0x92, 0x36, 0x50,
-	0xa2, 0x60, 0x4a, 0xa1, 0xe4, 0x53, 0x4d, 0x21, 0xb5, 0x5f, 0x1a, 0xb4, 0x14, 0x5a, 0x0a, 0xb2,
-	0xba, 0xd3, 0xb8, 0xb0, 0x77, 0x6b, 0x77, 0x57, 0x21, 0xff, 0xad, 0x3f, 0xae, 0x78, 0xb7, 0xa7,
-	0x77, 0x9e, 0x6f, 0xdf, 0x76, 0xe7, 0xe5, 0x99, 0x67, 0x9f, 0x99, 0x9b, 0x83, 0x1a, 0x9d, 0xf2,
-	0xb6, 0x42, 0x8d, 0x6a, 0x4e, 0x0d, 0x97, 0x41, 0x6b, 0xaa, 0xa4, 0x91, 0xa4, 0x92, 0x30, 0x79,
-	0xb7, 0x50, 0xbb, 0x53, 0x48, 0x0d, 0x3e, 0x28, 0x39, 0xe7, 0x0c, 0x55, 0x1f, 0xff, 0xce, 0x50,
-	0x1b, 0x52, 0x85, 0x3c, 0x67, 0x4e, 0xae, 0x99, 0xbb, 0x2a, 0xf7, 0xf3, 0x9c, 0x11, 0x02, 0x85,
-	0x80, 0xfa, 0xe8, 0xe4, 0x43, 0x4b, 0x78, 0xf6, 0x3a, 0x50, 0x5f, 0x4f, 0xd6, 0x53, 0x19, 0x68,
-	0x24, 0x0e, 0x1c, 0xfb, 0xa8, 0x35, 0x7d, 0x44, 0x0b, 0x11, 0x5f, 0xbd, 0x0b, 0x20, 0xf7, 0x68,
-	0xf6, 0x54, 0xf3, 0x3e, 0xc2, 0x49, 0x2a, 0xca, 0xc2, 0x1e, 0x42, 0x4a, 0x42, 0x7d, 0x80, 0xe6,
-	0xd3, 0x9c, 0x72, 0x41, 0x47, 0x5c, 0x70, 0xf3, 0x14, 0x17, 0x39, 0x83, 0xca, 0xd4, 0x22, 0x0e,
-	0x97, 0x30, 0x10, 0x9b, 0x7a, 0x8c, 0xbc, 0x07, 0x30, 0xdc, 0xc7, 0xa1, 0x16, 0xd2, 0x68, 0x27,
-	0xdf, 0x3c, 0xba, 0xaa, 0x74, 0x6a, 0xad, 0xa4, 0x82, 0xdf, 0xb9, 0x8f, 0x03, 0x21, 0x4d, 0xbf,
-	0x6c, 0xec, 0x49, 0x7b, 0x37, 0x70, 0x9a, 0x29, 0xb8, 0x57, 0x86, 0x6f, 0xe0, 0xdc, 0x2f, 0x93,
-	0x44, 0x84, 0x74, 0x30, 0x4f, 0x02, 0x05, 0x46, 0xcd, 0xf2, 0xd9, 0x8b, 0xb3, 0xf7, 0x05, 0x1a,
-	0x1b, 0x00, 0x2d, 0x8f, 0x77, 0xf0, 0x2c, 0x7a, 0x53, 0x6e, 0xd7, 0x9b, 0xa2, 0x18, 0xef, 0x2b,
-	0x90, 0x7e, 0xe8, 0x8e, 0xac, 0x96, 0xd4, 0x29, 0x1c, 0x2f, 0xdc, 0x2b, 0x42, 0xc5, 0xc5, 0xb5,
-	0xc7, 0xc8, 0x2b, 0x28, 0x8f, 0x05, 0xc7, 0x20, 0x74, 0x45, 0x8c, 0x4a, 0x91, 0xa1, 0xc7, 0xbc,
-	0x1f, 0x70, 0x92, 0xc2, 0xb2, 0x7c, 0x2e, 0xa1, 0x9a, 0x60, 0xb0, 0xc2, 0x7c, 0x9e, 0xb0, 0xf6,
-	0x58, 0x52, 0xbe, 0x7c, 0x5a, 0xbe, 0x2e, 0x34, 0xee, 0x64, 0xf0, 0x87, 0x2b, 0xbf, 0xbf, 0xca,
-	0x88, 0xa9, 0x1e, 0x86, 0xee, 0x7d, 0x00, 0x77, 0x13, 0xc6, 0xde, 0xd6, 0x09, 0x28, 0xc5, 0x92,
-	0x65, 0x06, 0xf2, 0x35, 0x80, 0x36, 0x54, 0x99, 0xe1, 0x62, 0x3c, 0x2c, 0xe9, 0x72, 0x68, 0x59,
-	0xa4, 0x90, 0x06, 0x94, 0x30, 0x60, 0x91, 0xf3, 0x28, 0x42, 0xc5, 0x80, 0x85, 0xae, 0x3a, 0x14,
-	0xb5, 0xa1, 0x66, 0xa6, 0x9d, 0x82, 0x95, 0x37, 0xbc, 0x75, 0xfe, 0x15, 0xe2, 0x76, 0x84, 0xfc,
-	0x06, 0xa8, 0xe6, 0x7c, 0x8c, 0xe4, 0x37, 0xbc, 0x58, 0x1b, 0x3a, 0x72, 0x9e, 0xea, 0xea, 0xe6,
-	0x6f, 0xc0, 0xbd, 0xd8, 0x1d, 0x64, 0x1f, 0x3f, 0x82, 0x97, 0x99, 0x61, 0x22, 0x97, 0xa9, 0xd4,
-	0x6d, 0xd3, 0xeb, 0xbe, 0xd9, 0x17, 0x66, 0x6b, 0x3c, 0x40, 0x25, 0x31, 0x1a, 0xe4, 0x2c, 0x95,
-	0x96, 0x1d, 0x40, 0xb7, 0xb9, 0x3d, 0xc0, 0x22, 0x22, 0x90, 0x6c, 0x43, 0x49, 0x9a, 0xcf, 0xd6,
-	0xa9, 0x71, 0xdf, 0xee, 0x8d, 0xb3, 0x65, 0x7e, 0x42, 0x35, 0xbd, 0xf5, 0x88, 0x97, 0x4e, 0xdd,
-	0xb4, 0x4f, 0xdd, 0xf3, 0x9d, 0x31, 0x2b, 0x4d, 0x12, 0x6b, 0x6f, 0x4d, 0x93, 0xec, 0xda, 0x5c,
-	0xd3, 0x64, 0xc3, 0xc6, 0xec, 0x7e, 0xfe, 0xd5, 0x7d, 0xe4, 0x66, 0x32, 0x1b, 0xb5, 0xc6, 0xd2,
-	0x6f, 0xfb, 0x34, 0x98, 0xa1, 0x60, 0x28, 0x14, 0x52, 0xd1, 0x9e, 0x20, 0x15, 0x66, 0x72, 0x9d,
-	0x80, 0xb8, 0xd6, 0x4f, 0xda, 0xa0, 0xdf, 0xa6, 0x53, 0x7e, 0x9b, 0x30, 0x8f, 0x8a, 0xe1, 0x9f,
-	0xe3, 0xe6, 0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x53, 0xe2, 0x3b, 0x4b, 0x52, 0x06, 0x00, 0x00,
+	// 702 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x51, 0x4f, 0x13, 0x4d,
+	0x14, 0x4d, 0x0b, 0x14, 0x7a, 0xfb, 0x7d, 0x18, 0x87, 0x00, 0x65, 0x8d, 0xa1, 0x0e, 0xa0, 0x24,
+	0x4a, 0x9b, 0x80, 0x31, 0x31, 0x3c, 0xd9, 0x92, 0x60, 0x7d, 0x91, 0x2c, 0xc6, 0xa8, 0x31, 0x21,
+	0x53, 0xf6, 0x0a, 0x93, 0xcc, 0xee, 0xd6, 0x9d, 0x69, 0x0d, 0x0f, 0xfe, 0x2b, 0xff, 0x85, 0x7f,
+	0xca, 0x74, 0x77, 0x96, 0xce, 0xec, 0x6e, 0xb7, 0x8d, 0xf1, 0xad, 0x7b, 0xe7, 0xde, 0x73, 0xcf,
+	0x9c, 0x39, 0x73, 0xa7, 0xb0, 0xc9, 0x86, 0xbc, 0x13, 0xa1, 0xc4, 0x68, 0xcc, 0x14, 0x0f, 0x83,
+	0xf6, 0x30, 0x0a, 0x55, 0x48, 0x1a, 0x46, 0x88, 0x9e, 0xc2, 0x66, 0x2f, 0x42, 0xa6, 0xf0, 0x22,
+	0x0a, 0xc7, 0xdc, 0xc3, 0xc8, 0xc5, 0xef, 0x23, 0x94, 0x8a, 0xac, 0x43, 0x95, 0x7b, 0xcd, 0x4a,
+	0xab, 0x72, 0x58, 0x77, 0xab, 0xdc, 0x23, 0x04, 0x96, 0x03, 0xe6, 0x63, 0xb3, 0x1a, 0x47, 0xe2,
+	0xdf, 0xf4, 0x18, 0xb6, 0xb2, 0xc5, 0x72, 0x18, 0x06, 0x12, 0x49, 0x13, 0x56, 0x7d, 0x94, 0x92,
+	0xdd, 0xa0, 0x86, 0x48, 0x3f, 0xe9, 0x3e, 0x90, 0x73, 0x54, 0x73, 0xba, 0xd1, 0xd7, 0xb0, 0x61,
+	0x65, 0x69, 0xd8, 0x45, 0x48, 0x85, 0xb0, 0x75, 0x89, 0xea, 0xcd, 0x98, 0x71, 0xc1, 0x06, 0x5c,
+	0x70, 0x75, 0x97, 0x36, 0xd9, 0x85, 0xc6, 0x50, 0x23, 0x5e, 0xdd, 0xc3, 0x40, 0x1a, 0xea, 0x7b,
+	0xe4, 0x25, 0x80, 0xe2, 0x3e, 0x5e, 0x49, 0x11, 0x2a, 0xd9, 0xac, 0xb6, 0x96, 0x0e, 0x1b, 0xc7,
+	0x9b, 0x6d, 0x53, 0xc1, 0x0f, 0xdc, 0xc7, 0x4b, 0x11, 0x2a, 0xb7, 0xae, 0xf4, 0x2f, 0x49, 0x4f,
+	0x60, 0x3b, 0xd7, 0x70, 0xae, 0x0c, 0xef, 0xa1, 0x79, 0x7e, 0x5f, 0x24, 0x12, 0xa4, 0x85, 0x79,
+	0x12, 0x58, 0xf6, 0x98, 0xba, 0xdf, 0xf6, 0xe4, 0x37, 0x7d, 0x0b, 0x3b, 0x05, 0x80, 0x9a, 0xc7,
+	0x73, 0x58, 0x49, 0xf6, 0x54, 0x29, 0xdb, 0x53, 0x92, 0x43, 0xdf, 0x01, 0x71, 0xe3, 0xe5, 0x24,
+	0xaa, 0x49, 0x6d, 0xc3, 0xea, 0x64, 0x79, 0x4a, 0xa8, 0x36, 0xf9, 0xec, 0x7b, 0xe4, 0x11, 0xd4,
+	0xaf, 0x05, 0xc7, 0x20, 0x5e, 0x4a, 0x18, 0xad, 0x25, 0x81, 0xbe, 0x47, 0x3f, 0xc2, 0x86, 0x85,
+	0xa5, 0xf9, 0x1c, 0xc0, 0xba, 0xc1, 0x60, 0x8a, 0xf9, 0xbf, 0x11, 0xed, 0x7b, 0xa6, 0x7c, 0x55,
+	0x5b, 0xbe, 0x2e, 0xec, 0xf4, 0xc2, 0xe0, 0x1b, 0x8f, 0x7c, 0x77, 0x5a, 0x91, 0x52, 0x5d, 0x0c,
+	0x9d, 0xbe, 0x02, 0xa7, 0x08, 0x63, 0xee, 0xd1, 0x09, 0x58, 0x4b, 0x25, 0xcb, 0x19, 0xf2, 0x31,
+	0x80, 0x54, 0x2c, 0x52, 0x57, 0x13, 0x7b, 0x68, 0xd2, 0xf5, 0x38, 0x32, 0x29, 0x21, 0x3b, 0xb0,
+	0x86, 0x81, 0x97, 0x2c, 0x2e, 0x25, 0xa8, 0x18, 0x78, 0xf1, 0xd2, 0x16, 0xd4, 0xa4, 0x62, 0x6a,
+	0x24, 0x9b, 0xcb, 0x5a, 0xde, 0xf8, 0x8b, 0x7e, 0x82, 0x27, 0xe7, 0xa8, 0xb4, 0x88, 0x5e, 0x7c,
+	0xac, 0xdd, 0xbb, 0xec, 0xf5, 0xf9, 0x2b, 0xc7, 0x70, 0xa0, 0x65, 0xc8, 0x5a, 0x87, 0x1e, 0xfc,
+	0x67, 0xc8, 0x96, 0x3a, 0x68, 0xd7, 0x72, 0x90, 0xa1, 0xdf, 0x19, 0x2a, 0xc6, 0x85, 0x74, 0xad,
+	0x22, 0xea, 0xc2, 0x6e, 0xbe, 0x55, 0x2f, 0x36, 0x49, 0xba, 0x05, 0xcb, 0x46, 0x15, 0xdb, 0x46,
+	0x85, 0xf4, 0x6f, 0xa0, 0x35, 0x1b, 0xf3, 0x5f, 0x92, 0xff, 0x5d, 0x49, 0x2f, 0x84, 0x99, 0xb4,
+	0xa8, 0x87, 0xcb, 0xae, 0x47, 0xf6, 0xdc, 0x96, 0x72, 0xe7, 0x36, 0xc3, 0x15, 0x19, 0x9f, 0xad,
+	0x94, 0xf9, 0xac, 0x66, 0xf9, 0xec, 0xf8, 0x57, 0xcd, 0xda, 0xcd, 0x25, 0x46, 0x63, 0x7e, 0x8d,
+	0xe4, 0x2b, 0x3c, 0xc8, 0x0c, 0x31, 0xb2, 0x67, 0xc9, 0x54, 0x3c, 0x53, 0x9d, 0xfd, 0xf2, 0x24,
+	0x7d, 0x0e, 0x03, 0x78, 0x98, 0x1b, 0x4e, 0xe4, 0xc0, 0x2a, 0x9d, 0x35, 0x0d, 0x9d, 0xa7, 0xf3,
+	0xd2, 0x74, 0x8f, 0x0b, 0x68, 0x18, 0xa3, 0x86, 0x14, 0x1d, 0xb2, 0x39, 0xd0, 0x9c, 0xd6, 0xec,
+	0x04, 0x8d, 0x88, 0x40, 0xf2, 0x03, 0x82, 0xd8, 0x7c, 0x66, 0x4e, 0x21, 0xe7, 0xd9, 0xdc, 0x3c,
+	0xdd, 0xe6, 0x33, 0xac, 0xdb, 0xaf, 0x28, 0xa1, 0x76, 0x69, 0xd1, 0xfb, 0xec, 0xec, 0x95, 0xe6,
+	0x4c, 0x35, 0x31, 0x9e, 0xd1, 0x8c, 0x26, 0xf9, 0x67, 0x38, 0xa3, 0x49, 0xd1, 0x0b, 0xfc, 0x13,
+	0x9c, 0xd9, 0x43, 0x83, 0xb4, 0xb3, 0xf5, 0xe5, 0x73, 0xcb, 0xe9, 0x2c, 0x9c, 0xaf, 0xdb, 0xff,
+	0x88, 0x9f, 0xcd, 0xc2, 0x4b, 0x4f, 0x5e, 0xcc, 0x01, 0xb3, 0xe6, 0x8d, 0x73, 0xb4, 0x60, 0x76,
+	0xd2, 0xb8, 0x7b, 0xf6, 0xa5, 0x7b, 0xc3, 0xd5, 0xed, 0x68, 0xd0, 0xbe, 0x0e, 0xfd, 0x8e, 0xcf,
+	0x82, 0x11, 0x0a, 0x0f, 0x45, 0x84, 0x4c, 0x74, 0x6e, 0x91, 0x09, 0x75, 0x7b, 0x64, 0xe0, 0x1d,
+	0xc9, 0x3b, 0xa9, 0xd0, 0xef, 0xb0, 0x21, 0x3f, 0x35, 0xc2, 0x83, 0x5a, 0xfc, 0x0f, 0xec, 0xe4,
+	0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xa5, 0xbb, 0x1b, 0x88, 0x9a, 0x09, 0x00, 0x00,
 }
