@@ -24,22 +24,53 @@ A Twirp-based API for managing health provider availability and client reservati
    cd health-reservation-system
    ```
 
-2. Install dependencies:
-   ```bash
-   go mod tidy
-   ```
+2. Use the `Makefile` for streamlined setup and operations.
 
-3. Build the server:
-   ```bash
-   go build -o health-reservation-server ./cmd/server
-   ```
+## Using the Makefile
 
-4. Run the server:
-   ```bash
-   ./health-reservation-server
-   ```
+### Setup
+Install dependencies:
+```bash
+make setup
+```
+
+### Build
+Compile the server:
+```bash
+make build
+```
+
+### Run
+Start the server:
+```bash
+make run
+```
 
 The server will start on `http://localhost:8080`.
+
+### Testing
+Run all tests:
+```bash
+make test
+```
+
+### Generate Proto Code
+Generate Twirp and Go code from `.proto` files:
+```bash
+make generate
+```
+
+### Cleanup
+Remove build artifacts:
+```bash
+make clean
+```
+
+### Dependency Check
+Ensure `protoc` is installed:
+```bash
+make protoc-check
+```
 
 ## Database Configuration
 
@@ -187,22 +218,6 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
 ## Cleanup Task
 
 The server includes an automated task to clean up expired reservations every minute. Expired reservations are marked as "Available" and moved back to the slots table.
-
-## Development
-
-### Generate Code from Proto
-
-To regenerate the Twirp and Go code from the `.proto` file:
-```bash
-protoc --twirp_out=. --go_out=. --go_opt=paths=source_relative --twirp_opt=paths=source_relative api/reservation.proto
-```
-
-## Testing
-
-Run the tests:
-```bash
-go test ./... -v
-```
 
 ## License
 
