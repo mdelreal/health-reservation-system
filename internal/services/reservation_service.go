@@ -30,7 +30,6 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 		return nil, errors.New("provider not found")
 	}
 
-	// Create a map to avoid duplicate availability entries
 	availabilityMap := make(map[string]models.Availability)
 	var slots []models.Slot
 
@@ -45,23 +44,33 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 			return nil, errors.New("invalid end time format")
 		}
 
-		// Create a unique key for the availability to prevent duplicates
-		key := fmt.Sprintf("%s-%s", startTime, endTime)
-		if _, exists := availabilityMap[key]; exists {
+		// Check if availability already exists for this timeframe
+		var existingAvailability models.Availability
+		err = storage.DB.First(&existingAvailability, "provider_id = ? AND start_time = ? AND end_time = ?", req.ProviderId, startTime, endTime).Error
+		if err == nil {
+			// Skip this time slot if availability already exists
 			continue
 		}
 
-		// Add availability to the map
+		// Create a new availability entry
 		availability := models.Availability{
 			ID:         generateID(),
 			ProviderID: req.ProviderId,
 			StartTime:  startTime,
 			EndTime:    endTime,
 		}
-		availabilityMap[key] = availability
+		availabilityMap[fmt.Sprintf("%s-%s", startTime, endTime)] = availability
 
 		// Split the interval into 15-minute slots
 		for t := startTime; t.Before(endTime); t = t.Add(15 * time.Minute) {
+			// Check if slot already exists for this timeframe
+			var existingSlot models.Slot
+			err = storage.DB.First(&existingSlot, "availability_id = ? AND start_time = ? AND end_time = ?", availability.ID, t, t.Add(15*time.Minute)).Error
+			if err == nil {
+				// Skip this slot if it already exists
+				continue
+			}
+
 			slots = append(slots, models.Slot{
 				ID:             generateID(),
 				AvailabilityID: availability.ID,
@@ -72,16 +81,17 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 		}
 	}
 
-	// Convert the map to a slice of availabilities
+	// Save new availabilities and slots to the database
 	availabilities := make([]models.Availability, 0, len(availabilityMap))
 	for _, availability := range availabilityMap {
 		availabilities = append(availabilities, availability)
 	}
 
-	// Save the availabilities and slots to the database
-	err = storage.AddAvailabilityAndSlots(req.ProviderId, availabilities, slots)
-	if err != nil {
-		return nil, err
+	if len(availabilities) > 0 || len(slots) > 0 {
+		err = storage.AddAvailabilityAndSlots(req.ProviderId, availabilities, slots)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &pb.SetAvailabilityResponse{Message: "Availability set successfully"}, nil
