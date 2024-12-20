@@ -20,7 +20,7 @@ A Twirp-based API for managing health provider availability and client reservati
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/manueldelreal/health-reservation-system.git
+   git clone https://github.com/mdelreal/health-reservation-system.git
    cd health-reservation-system
    ```
 
