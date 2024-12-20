@@ -84,7 +84,23 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
 
 ### RPC Methods
 
-#### 1. **SetAvailability**
+#### 1. **CreateProvider**
+
+- **Description:** Creates a provider in the system. Availability cannot be set without a provider.
+- **Endpoint:** `CreateProvider`
+- **Request:**
+  ```json
+  {
+    "id": "provider_123",
+    "name": "Dr. John Doe"
+  }
+  ```
+- **Response:**
+  ```json
+  { "message": "Provider created successfully" }
+  ```
+
+#### 2. **SetAvailability**
 
 - **Description:** Allows a provider to set availability.
 - **Endpoint:** `SetAvailability`
@@ -102,7 +118,7 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
   { "message": "Availability set successfully" }
   ```
 
-#### 2. **GetAvailableSlots**
+#### 3. **GetAvailableSlots**
 
 - **Description:** Retrieves available slots for a provider.
 - **Endpoint:** `GetAvailableSlots`
@@ -127,7 +143,7 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
   }
   ```
 
-#### 3. **ReserveSlot**
+#### 4. **ReserveSlot**
 
 - **Description:** Reserves an available slot.
 - **Endpoint:** `ReserveSlot`
@@ -146,7 +162,7 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
   }
   ```
 
-#### 4. **ConfirmReservation**
+#### 5. **ConfirmReservation**
 
 - **Description:** Confirms a reservation.
 - **Endpoint:** `ConfirmReservation`
@@ -161,7 +177,7 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
   { "message": "Reservation confirmed" }
   ```
 
-#### 5. **GetReservedSlotsByProvider**
+#### 6. **GetReservedSlotsByProvider**
 
 - **Description:** Retrieves reservations for a provider, optionally filtered by date.
 - **Endpoint:** `GetReservedSlotsByProvider`
@@ -188,7 +204,7 @@ Twirp service base URL: `http://localhost:8080/twirp/reservation.ReservationServ
   }
   ```
 
-#### 6. **GetReservedSlotsByClient**
+#### 7. **GetReservedSlotsByClient**
 
 - **Description:** Retrieves reservations for a client, optionally filtered by date.
 - **Endpoint:** `GetReservedSlotsByClient`
