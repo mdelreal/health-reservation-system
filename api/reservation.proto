@@ -16,6 +16,30 @@ service ReservationService {
 
   // Confirm a reservation
   rpc ConfirmReservation(ConfirmReservationRequest) returns (ConfirmReservationResponse);
+
+  // Create a new provider
+  rpc CreateProvider(CreateProviderRequest) returns (CreateProviderResponse);
+
+  // Retrieve provider data
+  rpc GetProvider(GetProviderRequest) returns (GetProviderResponse);
+}
+
+message CreateProviderRequest {
+  string id = 1;   // Unique ID for the provider
+  string name = 2; // Provider's name
+}
+
+message CreateProviderResponse {
+  string message = 1; // Confirmation message
+}
+
+message GetProviderRequest {
+  string id = 1; // ID of the provider to retrieve
+}
+
+message GetProviderResponse {
+  string id = 1;   // Provider ID
+  string name = 2; // Provider's name
 }
 
 message SetAvailabilityRequest {

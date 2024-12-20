@@ -23,10 +23,19 @@ func generateID() string {
 }
 
 func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAvailabilityRequest) (*pb.SetAvailabilityResponse, error) {
+	// Validate that the provider exists
+	var provider models.Provider
+	err := storage.DB.First(&provider, "id = ?", req.ProviderId).Error
+	if err != nil {
+		return nil, errors.New("provider not found")
+	}
+
+	// Create a map to avoid duplicate availability entries
 	availabilityMap := make(map[string]models.Availability)
 	var slots []models.Slot
 
 	for _, timeSlot := range req.TimeSlots {
+		// Parse start and end times
 		startTime, err := time.Parse(time.RFC3339, timeSlot.StartTime)
 		if err != nil {
 			return nil, errors.New("invalid start time format")
@@ -36,11 +45,13 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 			return nil, errors.New("invalid end time format")
 		}
 
+		// Create a unique key for the availability to prevent duplicates
 		key := fmt.Sprintf("%s-%s", startTime, endTime)
 		if _, exists := availabilityMap[key]; exists {
 			continue
 		}
 
+		// Add availability to the map
 		availability := models.Availability{
 			ID:         generateID(),
 			ProviderID: req.ProviderId,
@@ -49,6 +60,7 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 		}
 		availabilityMap[key] = availability
 
+		// Split the interval into 15-minute slots
 		for t := startTime; t.Before(endTime); t = t.Add(15 * time.Minute) {
 			slots = append(slots, models.Slot{
 				ID:             generateID(),
@@ -60,12 +72,14 @@ func (s *ReservationService) SetAvailability(ctx context.Context, req *pb.SetAva
 		}
 	}
 
+	// Convert the map to a slice of availabilities
 	availabilities := make([]models.Availability, 0, len(availabilityMap))
 	for _, availability := range availabilityMap {
 		availabilities = append(availabilities, availability)
 	}
 
-	err := storage.AddAvailabilityAndSlots(req.ProviderId, availabilities, slots)
+	// Save the availabilities and slots to the database
+	err = storage.AddAvailabilityAndSlots(req.ProviderId, availabilities, slots)
 	if err != nil {
 		return nil, err
 	}
@@ -134,4 +148,42 @@ func (s *ReservationService) ConfirmReservation(ctx context.Context, req *pb.Con
 	}
 
 	return &pb.ConfirmReservationResponse{Message: "Reservation confirmed"}, nil
+}
+
+func (s *ReservationService) CreateProvider(ctx context.Context, req *pb.CreateProviderRequest) (*pb.CreateProviderResponse, error) {
+	// Check if the provider already exists
+	var existingProvider models.Provider
+	err := storage.DB.First(&existingProvider, "id = ?", req.Id).Error
+	if err == nil {
+		return nil, errors.New("provider already exists")
+	}
+
+	// Create a new provider
+	provider := models.Provider{
+		ID:   req.Id,
+		Name: req.Name,
+	}
+
+	err = storage.DB.Create(&provider).Error
+	if err != nil {
+		return nil, errors.New("failed to create provider")
+	}
+
+	return &pb.CreateProviderResponse{
+		Message: "Provider created successfully",
+	}, nil
+}
+
+func (s *ReservationService) GetProvider(ctx context.Context, req *pb.GetProviderRequest) (*pb.GetProviderResponse, error) {
+	// Retrieve the provider data
+	var provider models.Provider
+	err := storage.DB.First(&provider, "id = ?", req.Id).Error
+	if err != nil {
+		return nil, errors.New("provider not found")
+	}
+
+	return &pb.GetProviderResponse{
+		Id:   provider.ID,
+		Name: provider.Name,
+	}, nil
 }
